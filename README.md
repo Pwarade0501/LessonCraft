@@ -63,11 +63,12 @@ Our suite of AI-powered tools is designed to cover every aspect of a teacher's w
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/bhavesh-bari/LessonCraft.git
+   git clone https://github.com/Pwarade0501/LessonCraft.git
+
    cd lessoncraft
 
 📁 Project Structure
-
+=
     lessoncraft/
 │── src/
 │   ├── app/                # App Router pages & APIs

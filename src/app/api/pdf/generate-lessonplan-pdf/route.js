@@ -4,23 +4,60 @@ import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 import { requireAuth } from "@/lib/auth";
+
+async function getBrowserExecutablePath() {
+  if (process.env.AWS_REGION || process.env.VERCEL) {
+    return chromium.executablePath();
+  }
+
+  const candidates = [
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    ...(process.platform === 'win32'
+      ? [
+          path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Google', 'Chrome', 'Application', 'chrome.exe'),
+          path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Google', 'Chrome', 'Application', 'chrome.exe'),
+          path.join(process.env.LOCALAPPDATA || '', 'Google', 'Chrome', 'Application', 'chrome.exe'),
+          path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+          path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+        ]
+      : process.platform === 'darwin'
+        ? ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome']
+        : ['/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome']),
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    try {
+      await fs.access(candidate);
+      return candidate;
+    } catch {
+      // Try the next known browser location.
+    }
+  }
+
+  throw new Error(
+    'No local Chrome or Chromium browser was found. Install Chrome or set PUPPETEER_EXECUTABLE_PATH to its executable.'
+  );
+}
+
 export async function POST(req) {
   try {
     await requireAuth();
     const { lessonPlan } = await req.json();
+    if (!lessonPlan || typeof lessonPlan !== 'object' || typeof lessonPlan.lessonTitle !== 'string') {
+      return NextResponse.json({ error: 'A valid lesson plan is required.' }, { status: 400 });
+    }
+
     const imagePath = path.join(process.cwd(), 'public', 'LessonCraftLogo.png');
     const imageBuffer = await fs.readFile(imagePath);
     const logoBase64 = `data:image/png;base64,${imageBuffer.toString('base64')}`;
 
     const browser = await puppeteer.launch({
-      args: chromium.args,
+      args: process.env.AWS_REGION || process.env.VERCEL ? chromium.args : [],
       defaultViewport: chromium.defaultViewport,
-      executablePath:
-        process.env.AWS_REGION || process.env.VERCEL
-          ? await chromium.executablePath()
-          : undefined,
-      headless: chromium.headless,
+      executablePath: await getBrowserExecutablePath(),
+      headless: true,
     });
+    try {
     const page = await browser.newPage();
 
     // --- Icons and colors matching the frontend ---
@@ -223,8 +260,6 @@ export async function POST(req) {
       margin: { top: '20mm', bottom: '20mm', right: '20mm', left: '20mm' },
     });
 
-    await browser.close();
-
     return new NextResponse(pdfBuffer, {
       status: 200,
       headers: {
@@ -232,9 +267,18 @@ export async function POST(req) {
         'Content-Disposition': `attachment; filename="${lessonPlan.lessonTitle.replace(/\s+/g, '_')}.pdf"`,
       },
     });
+    } finally {
+      await browser.close();
+    }
 
   } catch (error) {
     console.error('PDF generation failed:', error);
-    return NextResponse.json({ error: 'Failed to generate PDF' }, { status: 500 });
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Please sign in to download this PDF.' }, { status: 401 });
+    }
+    return NextResponse.json(
+      { error: 'Failed to generate PDF.', details: error.message },
+      { status: 500 }
+    );
   }
 }

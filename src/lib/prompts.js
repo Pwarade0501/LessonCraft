@@ -143,122 +143,55 @@ You must follow exactly this structure for each question:${questionStructure}
 `;
 };
 export const lessonPlanPrompt = (topic, subject, level) => `
-  You are an expert educator and instructional designer creating a detailed, structured lesson plan.
+You are an expert educator creating a detailed, practical lesson plan.
 
-  ## Specifications
-  - Subject: ${subject}
-  - Topic: ${topic}
-  - Student Level: ${level}
+Subject: ${subject}
+Topic: ${topic}
+Student level: ${level}
 
-  ## Rules
-  1. Generate a complete lesson plan with all the sections listed in the required JSON structure.
-  2. Estimate the total hours and number of lectures needed.
-  3. The content must be clear, actionable, and appropriate for the specified student level.
-  4. The final output **MUST** be a valid JSON object only — no markdown, comments, or extra text outside of the JSON structure.
-
-  ## Required JSON Output Structure
-  {
-    "lessonTitle": "A creative and descriptive title for the lesson",
-    "subject": "${subject}",
-    "topic": "${topic}",
-    "estimatedTotalHours": "e.g., 2 hours",
-    "estimatedNumLectures": "e.g., 2 lectures",
-    "targetStudentLevel": "${level}",
-    "learningObjectives": [
-      "First clear, measurable learning outcome.",
-      "Second clear, measurable learning outcome.",
-      "Third clear, measurable learning outcome."
-    ],
-    "prerequisites": [
-      "A list of prior knowledge or skills students should have."
-    ],
-    "materialsNeeded": [
-      "A bulleted list of all resources, tools, or equipment needed."
-    ],
-    "lessonOutline": [
-      {
-        "section": "Introduction",
-        "time": "e.g., 10 minutes",
-        "purpose": "Brief purpose of this section.",
-        "teacherActions": "What the teacher does during this section.",
-        "studentActions": "What the students are expected to do."
-      },
-      {
-        "section": "Core Explanation",
-        "time": "e.g., 25 minutes",
-        "purpose": "Brief purpose of this section.",
-        "teacherActions": "What the teacher does during this section.",
-        "studentActions": "What the students are expected to do."
-      }
-    ],
-    "teachingStrategies": [
-      "Primary teaching method (e.g., Interactive Lecture)",
-      "Secondary method (e.g., Group Work)"
-    ],
+Return only one valid JSON object. Do not use Markdown fences, comments, or text outside the JSON. Include every key and use the following shape (replace the example values with relevant content):
+{
+  "lessonTitle": "A descriptive title",
+  "subject": "${subject}",
+  "topic": "${topic}",
+  "estimatedTotalHours": "2 hours",
+  "estimatedNumLectures": "2 lectures",
+  "targetStudentLevel": "${level}",
+  "learningObjectives": ["Measurable learning objective"],
+  "prerequisites": ["Relevant prior knowledge"],
+  "materialsNeeded": ["Required material"],
+  "lessonOutline": [
     {
+      "section": "Introduction",
+      "time": "10 minutes",
+      "purpose": "Set the context for the lesson.",
+      "teacherActions": "Introduce the topic and connect it to prior learning.",
+      "studentActions": "Answer an opening question."
+    }
+  ],
+  "teachingStrategies": ["Interactive explanation", "Guided practice"],
   "stepByStepPlan": [
     {
-  // Each lecture should have a clear structure steps means what they teach(description) in particular timing slot(first 15 minutes, next 20 minutes etc)
       "lecture": "Lecture 1",
-      "description": "A brief description of the lecture content.",
+      "description": "Introduce the main ideas.",
       "slots": [
-        {
-          "slot": 1,
-          "timing": "e.g., 5 minutes",
-          "description": "Detailed description of the first teaching step."
-        },
-        {
-          "slot": 2,
-          "timing": "e.g., 15 minutes",
-          "description": "Detailed description of the second teaching step."
-        }
-      ]
-    },
-    {
-      "lecture": "Lecture 2",
-      "description": "A brief description of the lecture content.",
-      "slots": [
-        {
-          "slot": 1,
-          "timing": "e.g., 5 minutes",
-          "description": "Detailed description of the first teaching step."
-        },
-        {
-          "slot": 2,
-          "timing": "e.g., 15 minutes",
-          "description": "Detailed description of the second teaching step."
-        }
+        { "slot": 1, "timing": "10 minutes", "description": "Introduce the topic." }
       ]
     }
-  ]
-}
-
-    "activities": [
-      {
-        "title": "Name of the primary interactive activity",
-        "description": "A short description of the activity."
-      }
-    ],  
-    "assessmentMethods": {
-      "formative":"Formative assessment techniques (e.g., quizzes, discussions)",
-      "summative":"Summative assessment methods (e.g., tests, projects)"
-    }
-      
-    ,
-    "homework": [
-  "First specific follow-up task to reinforce learning.",
-  "Second optional reinforcement task."
-  //minimum 5 tasks
-],
-recapAndReflection:{
-              summary: "A summary of the key points covered in the lesson.",
-              reflectionQuestions: [
-                "First question to prompt student reflection.",
-                "Second question to prompt student reflection."
-                // add more as needed
-              ]
-}
+  ],
+  "activities": [
+    { "title": "Practice activity", "description": "Students apply the lesson concepts." }
+  ],
+  "assessmentMethods": {
+    "formative": "Check understanding during the lesson.",
+    "summative": "Evaluate the final student task."
+  },
+  "homework": ["A specific follow-up task"],
+  "recapAndReflection": {
+    "summary": "Summarize the key ideas.",
+    "reflectionQuestions": ["What was the most important idea you learned?"]
   }
+}
 `;
 export function subtopicsPrompt(subject, topic) {
   return `

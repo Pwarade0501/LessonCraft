@@ -19,7 +19,13 @@ export const authOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        const res = await fetch(`${process.env.BACKEND_URL}/api/login`, {
+        const backendUrl = process.env.BACKEND_URL;
+        if (!backendUrl) {
+          throw new Error("BACKEND_URL is not configured");
+        }
+
+        const loginUrl = new URL("/api/login", backendUrl);
+        const res = await fetch(loginUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -28,7 +34,19 @@ export const authOptions = {
           })
         });
 
-        const data = await res.json();
+        const responseText = await res.text();
+        let data;
+        try {
+          data = responseText ? JSON.parse(responseText) : null;
+        } catch {
+          console.error(`Login API returned invalid JSON (HTTP ${res.status})`);
+          throw new Error("Login service returned an invalid response");
+        }
+
+        if (!data) {
+          console.error(`Login API returned an empty response (HTTP ${res.status})`);
+          throw new Error("Login service returned an empty response");
+        }
         if (!res.ok || !data.user) {
           throw new Error("Invalid email or password");
         }

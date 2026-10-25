@@ -5,12 +5,16 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 export async function POST(request) {
-  await dbConnect();
-
   try {
+    await dbConnect();
     const { email, password } = await request.json();
 
-    const user = await User.findOne({ email });
+    if (!email || !password) {
+      return NextResponse.json({ message: 'Email and password are required' }, { status: 400 });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
@@ -30,6 +34,7 @@ export async function POST(request) {
     });
 
     const userResponse = {
+        id: user._id.toString(),
         name: user.name,
         email: user.email,
     };

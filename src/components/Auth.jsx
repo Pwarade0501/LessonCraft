@@ -71,7 +71,13 @@ export default function AuthPage() {
                     }),
                 });
 
-                const data = await res.json();
+                const responseText = await res.text();
+                let data = {};
+                try {
+                    data = responseText ? JSON.parse(responseText) : {};
+                } catch {
+                    throw new Error(`Signup service returned an invalid response (HTTP ${res.status}).`);
+                }
                 if (res.ok) {
                     toast.success("Account created! Please log in to continue.");
                     setIsLoginView(true);
@@ -80,10 +86,16 @@ export default function AuthPage() {
                     setInstitution("");
                     setPassword("");
                 } else {
-                    toast.error(data.message || "An error occurred during sign up.");
+                    console.error("Signup API error:", {
+                        status: res.status,
+                        message: data.message,
+                        detail: data.error,
+                    });
+                    toast.error(data.message || data.error || `Signup failed (HTTP ${res.status}).`);
                 }
             } catch (error) {
-                toast.error("Signup failed. Please try again later.");
+                console.error("Signup request failed:", error);
+                toast.error(error.message || "Signup failed. Please try again later.");
             }
         }
 

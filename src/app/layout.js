@@ -12,7 +12,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const metadataBaseUrl =
+  process.env.NEXTAUTH_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
 export const metadata = {
+  metadataBase: new URL(metadataBaseUrl),
   title: "LessonCraft AI | AI-Powered Tools for Teachers",
   description: "Save hours of prep time with LessonCraft AI, the intelligent platform for teachers to instantly generate high-quality lesson plans, notes, quizzes, and classroom activities.",
   keywords: ["AI for teachers", "lesson plan generator", "quiz maker", "notes generator", "teacher tools", "education AI"],

@@ -7,10 +7,20 @@ export async function POST(req) {
   try {
     await requireAuth();
     const { subject, topic, level } = await req.json();
+    if (![subject, topic, level].every((value) => typeof value === "string" && value.trim())) {
+      return Response.json({ error: "Subject, topic, and level are required." }, { status: 400 });
+    }
 
-    const cacheKey = `lesson-plan:${subject}:${topic}:${level}`;
+    const cacheKey = `lesson-plan:${subject.trim()}:${topic.trim()}:${level.trim()}`;
 
-    let cached = await redisClient.get(cacheKey);
+    let cached = null;
+    if (redisClient.isReady) {
+      try {
+        cached = await redisClient.get(cacheKey);
+      } catch (error) {
+        console.error("Lesson plan cache read failed:", error);
+      }
+    }
     if (cached) {
       console.log("⚡ Serving from Redis cache");
       return new Response(cached, {
@@ -30,7 +40,13 @@ export async function POST(req) {
 
     const responseData = JSON.stringify({ lessonPlan });
 
-    await redisClient.setEx(cacheKey, 3600, responseData);
+    if (redisClient.isReady) {
+      try {
+        await redisClient.setEx(cacheKey, 3600, responseData);
+      } catch (error) {
+        console.error("Lesson plan cache write failed:", error);
+      }
+    }
 
     return new Response(responseData, {
       status: 200,
@@ -39,6 +55,9 @@ export async function POST(req) {
 
   } catch (error) {
     console.error("Lesson Plan API error:", error);
+    if (error.message === "Unauthorized") {
+      return Response.json({ error: "Please sign in to generate a lesson plan." }, { status: 401 });
+    }
     return new Response(
       JSON.stringify({
         error: "Failed to generate lesson plan.",

@@ -45,13 +45,21 @@ export default function LessonPlanGeneratorPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ subject, topic, level }),
             });
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const data = await response.json();
+            const responseText = await response.text();
+            let data;
+            try {
+                data = responseText ? JSON.parse(responseText) : {};
+            } catch {
+                throw new Error(`Lesson plan API returned an invalid response (HTTP ${response.status}).`);
+            }
+            if (!response.ok) {
+                throw new Error(data.details || data.error || `HTTP error! status: ${response.status}`);
+            }
             // Ensure we set to null if the response is not what we expect
             setLessonPlan(data.lessonPlan || null);
         } catch (error) {
             console.error("Failed to fetch lesson plan:", error);
-            alert("Failed to generate lesson plan. Please try again.");
+            alert(`Failed to generate lesson plan: ${error.message}`);
         } finally {
             setIsLoading(false);
         }
@@ -63,7 +71,16 @@ export default function LessonPlanGeneratorPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ lessonPlan }),
             });
-            if (!res.ok) throw new Error('PDF generation failed');
+            if (!res.ok) {
+                const responseText = await res.text();
+                let data = {};
+                try {
+                    data = responseText ? JSON.parse(responseText) : {};
+                } catch {
+                    throw new Error(`PDF service returned an invalid response (HTTP ${res.status}).`);
+                }
+                throw new Error(data.details || data.error || `PDF generation failed (HTTP ${res.status}).`);
+            }
             const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -74,8 +91,8 @@ export default function LessonPlanGeneratorPage() {
             a.remove();
             window.URL.revokeObjectURL(url);
         } catch (err) {
-            console.error(err);
-            alert('Failed to download PDF');
+            console.error("Failed to download lesson plan PDF:", err);
+            alert(`Failed to download PDF: ${err.message}`);
         }
     }
     const InfoCard = ({ icon, title, value }) => (
